@@ -1,0 +1,32 @@
+version: "3.7"
+services:
+  # Container or services tobe created when we run 'docker compose up'
+  web:
+    # build the image using the current directory - It will automatically look for Dockerfile
+    # build: .
+    build:
+      # build d image using the files that are in d same directory as 'docker-compose.yml' file
+      context: .
+      #   Specify d dockerfile to use
+      dockerfile: Dockerfile.dev
+    ports:
+      - "4000:3000"
+    volumes:
+      # Do not try to map a folder in our pwd against '/app/node_modules' in our container bc we already delete the node_modules in our pwd
+      - /app/node_modules
+      # Take everything in the Present Working Dir(PWD) & map it to d '/app' folder in the container
+      # '-v$(pwd):/app' - means map everything in d pwd to /app folder in the container, -v flag is docker volumes and indicate d mapping.
+      - .:/app
+
+  # Second Container to run tests
+  tests:
+    build:
+      context: .
+
+      dockerfile: Dockerfile.dev
+
+    volumes:
+      - /app/node_modules
+
+      - .:/app
+    command: ["npm", "run", "test"]
