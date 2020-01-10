@@ -1,0 +1,60 @@
+version: "3"
+services:
+  postgres:
+    image: "postgres:latest"
+  redis:
+    image: "redis:latest"
+
+  nginx:
+    restart: always
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./nginx
+    ports:
+      - "4000:80"
+    # Server service
+  api:
+    build:
+      dockerfile: Dockerfile.dev
+      # 'context' is the directory to build the image from
+      context: ./server
+    volumes:
+      - /app/node_modules
+      #   Anytime our app want to access anything in d /app dir of our container,except for the /node_modules folder,
+      # its goin to be redirected to /server folder in our current working directory
+      #   Since /server is mapped to /app in d container, any changes in the server folder wil reflect in /app in the container so we won't need to rebuild our image due to any changer in the server folder
+      - ./server:/app
+    # How the server should behave when started up as a container
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - PGUSER=postgres
+      - PGHOST=postgres
+      - PGDATABASE=postgres
+      - PGPASSWORD=postgres_password
+      - PGPORT=5432
+  # Client service
+  client:
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./client
+    volumes:
+      # Ensure that 'node_modules' inside d container is not overriden by any node_modules in d client folder
+      - /app/node_modules
+      # Anything in d client folder should be shared wt the /app folder in d container
+      - ./client:/app
+
+  # Worker service
+  worker:
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./worker
+    volumes:
+      # Ensure that 'node_modules' inside d container is not overriden by any node_modules in d client folder
+      - /app/node_modules
+      # Anything in d client folder should be shared wt the /app folder in d container
+      - ./worker:/app
+      # THINGS TO NOTE:
+      # The browser will make req to 'React Server' for /index.html & /main.js
+      # It will also make an API call to 'Express server' for /values/all & /values/current
+      # We need a webserver-nginx that will look at d req route to d appriopriate server

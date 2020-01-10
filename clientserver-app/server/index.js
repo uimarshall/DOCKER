@@ -25,7 +25,7 @@ pgClient
 	.catch(err => console.log(err));
 
 // Redis Client Setup
-const redis = require("./redis");
+const redis = require("redis");
 
 const redisClient = redis.createClient({
 	host: keys.redisHost,
@@ -61,12 +61,12 @@ app.post("/values", async (req, res) => {
 
 	redisClient.hset("values", index, "Nothing yet!");
 	//   Trigger worker
-	redisPublisher.publish("insert", index);
+	redisPublisher.publish("insert", index, undefined);
 	// Get the submitted index a7 permanently store it inside Postgres
-	pgClient.query("INSERT INTO values(number) VALUES($1), [index]");
+	pgClient.query("INSERT INTO values(number) VALUES($1)", [index]);
 	res.send({ working: true });
 });
 
 const port = process.env.PORT || 5000;
 
-app.listen(port, () => `Server running on port ${port} 🔥`);
+app.listen(port, () => console.log(`Server running on port ${port}`));
